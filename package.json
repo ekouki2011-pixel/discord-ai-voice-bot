@@ -1,0 +1,42 @@
+{
+  "name": "discord-ai-voice-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Japanese Discord AI TTS bot with SaydiVoice, VOICEVOX, ElevenLabs and Fish Audio",
+  "type": "module",
+  "engines": {
+    "node": ">=24.17.0 <25"
+  },
+  "scripts": {
+    "dev": "node --watch --import tsx src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "commands:register": "node --import tsx src/scripts/register.ts",
+    "voices:saydi": "node --import tsx src/scripts/saydi-voices.ts",
+    "doctor": "node --import tsx src/scripts/doctor.ts",
+    "smoke:voicevox": "node --import tsx src/scripts/smoke-voicevox.ts",
+    "db:backup": "node --import tsx src/scripts/backup.ts",
+    "security:scan": "node scripts/scan-secrets.mjs"
+  },
+  "dependencies": {
+    "@discordjs/voice": "0.19.2",
+    "discord.js": "14.28.1",
+    "dotenv": "18.0.10",
+    "opusscript": "0.0.8",
+    "pino": "10.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.15.0",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.73.0",
+    "vitest": "5.1.1"
+  }
+}

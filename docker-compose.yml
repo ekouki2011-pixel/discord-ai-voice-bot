@@ -1,0 +1,53 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      DATABASE_PATH: /app/data/bot.sqlite
+      TEMP_DIR: /app/tmp
+      HEALTH_HOST: 0.0.0.0
+      VOICEVOX_URL: http://voicevox:50021
+    volumes:
+      - bot-data:/app/data
+      - bot-backups:/app/backups
+    tmpfs:
+      - /app/tmp:uid=1000,gid=1000,mode=0700,size=128m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      voicevox:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 15s
+
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-0.26.2
+    restart: unless-stopped
+    environment:
+      VV_CPU_NUM_THREADS: "2"
+      VV_DISABLE_MUTABLE_API: "1"
+    volumes:
+      - ./scripts/voicevox-healthcheck.sh:/opt/bot-healthcheck.sh:ro
+    # The engine is reachable only on the Docker network; no host port is published.
+    healthcheck:
+      test: ["CMD", "bash", "/opt/bot-healthcheck.sh"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    # audio_query places text in query parameters; do not retain engine access logs.
+    logging:
+      driver: none
+
+volumes:
+  bot-data:
+  bot-backups:
