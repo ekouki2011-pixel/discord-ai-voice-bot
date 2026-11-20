@@ -1,0 +1,67 @@
+name: Discord VC test
+
+on:
+  workflow_dispatch:
+    inputs:
+      application_id:
+        description: Discord Application ID
+        required: true
+        type: string
+      server_id:
+        description: 招待済みのDiscordサーバーID
+        required: true
+        type: string
+      voicevox_terms:
+        description: テストで使うVOICEVOX音声の利用条件を確認した
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discord-vc-test
+  cancel-in-progress: false
+
+jobs:
+  voice-test:
+    if: inputs.voicevox_terms && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Build containers
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose build bot
+      - name: Register commands and run Discord test
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_CLIENT_ID: ${{ inputs.application_id }}
+          DISCORD_GUILD_ID: ${{ inputs.server_id }}
+        run: |
+          if [[ -z "$DISCORD_TOKEN" || ! "$DISCORD_CLIENT_ID" =~ ^[0-9]{17,20}$ || ! "$DISCORD_GUILD_ID" =~ ^[0-9]{17,20}$ ]]; then
+            echo "::error::Set the DISCORD_TOKEN secret and provide numeric Discord application and server IDs."
+            exit 1
+          fi
+          umask 077
+          printf 'DISCORD_TOKEN=%s\nDISCORD_CLIENT_ID=%s\nDISCORD_GUILD_ID=%s\nENGINE_TERMS_ACCEPTED=voicevox\n' \
+            "$DISCORD_TOKEN" "$DISCORD_CLIENT_ID" "$DISCORD_GUILD_ID" > .env
+          unset DISCORD_TOKEN
+          docker compose up -d --wait --wait-timeout 300
+          docker compose run --rm --no-deps bot node dist/scripts/register.js
+          echo 'Bot is online for 10 minutes. Test /join and /say from Discord now.'
+          for ((minute = 0; minute < 10; minute++)); do
+            curl -fsS --max-time 5 http://127.0.0.1:8080/readyz > /dev/null
+            sleep 60
+          done
+          curl -fsS --max-time 5 http://127.0.0.1:8080/readyz > /dev/null
+      - name: Stop test containers
+        if: always()
+        run: |
+          docker compose logs --no-color --tail=30 bot
+          docker compose down --volumes
+          rm -f .env
