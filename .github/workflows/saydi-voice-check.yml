@@ -1,0 +1,33 @@
+name: SaydiVoice saved voice check
+
+on:
+  workflow_dispatch:
+    inputs:
+      terms_confirmed:
+        description: SaydiVoiceのAPI利用資格と保存済み音声の利用権限を確認した
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  lookup:
+    if: inputs.terms_confirmed && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm run build
+      - name: Check the ID and status of 私の声1
+        env:
+          SAYDI_API_KEY: ${{ secrets.SAYDI_API_KEY }}
+          ENGINE_TERMS_ACCEPTED: saydi
+          API_TIMEOUT_MS: '30000'
+        run: node dist/scripts/saydi-voices.js --target-only

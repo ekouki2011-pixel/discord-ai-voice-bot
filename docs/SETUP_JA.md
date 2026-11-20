@@ -44,6 +44,8 @@ Botの管理コマンドを実行する人にはDiscordの「サーバー管理�
 6. processingなら待って再同期します。failed・ref_missingでも再作成や再アップロードは自動で行いません。本人がサービスへ問い合わせるなどして判断してください。
 7. 管理者が利用許諾を確認し、`/admin engine`、`/voice approve`、`/engine`、`/voice set` を設定します。その後の `/say` は音声生成APIを呼びます。
 
+iPhoneだけでIDを調べる場合は、Safariでこの非公開リポジトリの Settings → Secrets and variables → Actions を開き、`SAYDI_API_KEY` を Repository secret として登録します。Actions の「SaydiVoice saved voice check」で利用条件の確認欄を選択し、Run workflow を押します。「Check the ID and status of 私の声1」のログに、対象音声のIDと状態が表示されます。この確認では音声一覧と対象音声の状態を読み取ります。
+
 401はキー、403は権限・アカウント状態、402またはinsufficient_quotaはプラン・残高、429はレート・同時実行制限を確認します。取得できていないIDを推測で入力する必要はありません。
 
 ### 追加エンジン

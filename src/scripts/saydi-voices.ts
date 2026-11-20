@@ -6,7 +6,8 @@ const config=readConfig();const engines=new Engines(config);
 try{
   const provider=engines.requireAvailable('saydi') as SaydiEngine;
   const voices=await provider.listVoices();
-  console.table(voices.map(v=>({name:v.name,id:v.id,status:v.status})));
+  const display=process.argv.includes('--target-only')?voices.filter(voice=>voice.name==='私の声1'):voices;
+  if(display.length)console.table(display.map(v=>({name:v.name,id:v.id,status:v.status})));
   const voice=await provider.findMyVoice('私の声1');
   console.log(`既存「私の声1」のVoice ID: ${voice.id}\n状態: ${voice.status}\n生成・再生テストは実行していません。`);
 }catch(error){console.error(publicError(error));process.exitCode=1;}
