@@ -50,6 +50,11 @@ async function main(){
   const timer=setInterval(()=>voice.tick(id=>store.guild(id).idleSeconds),5000);timer.unref();
   let shuttingDown=false;
   const server=createServer((req,res)=>{
+    if(req.url==='/'){
+      res.writeHead(shuttingDown?503:200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});
+      res.end(shuttingDown?'Stopping':'OK');
+      return;
+    }
     if(req.url!=='/healthz'&&req.url!=='/readyz'){res.writeHead(404).end();return;}
     const ready=client.isReady()&&!shuttingDown;
     res.writeHead(req.url==='/readyz'&&!ready?503:200,{'Content-Type':'application/json','Cache-Control':'no-store'});

@@ -15,6 +15,7 @@ on:
         description: '/wav 用。ref.wav で話しているセリフを正確に入力（VCのみのテストは空欄可）'
         required: false
         type: string
+        default: '私は姫乃きさら。担当は原画。このくらいでいいでしょ？'
       voicevox_terms:
         description: テストで使うVOICEVOX音声の利用条件を確認した
         required: true
@@ -44,7 +45,7 @@ jobs:
       - name: Register commands and run Discord test
         env:
           GPT_SOVITS_PROMPT_TEXT: ${{ inputs.gpt_sovits_prompt_text }}
-          GPT_SOVITS_URL: https://folding-naples-carry-reforms.trycloudflare.com
+          GPT_SOVITS_URL: https://pope-polymer-restructuring-sizes.trycloudflare.com
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_CLIENT_ID: ${{ inputs.application_id }}
           DISCORD_GUILD_ID: ${{ inputs.server_id }}
