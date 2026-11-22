@@ -11,6 +11,10 @@ on:
         description: 招待済みのDiscordサーバーID
         required: true
         type: string
+      gpt_sovits_prompt_text:
+        description: '/wav 用。ref.wav で話しているセリフを正確に入力（VCのみのテストは空欄可）'
+        required: false
+        type: string
       voicevox_terms:
         description: テストで使うVOICEVOX音声の利用条件を確認した
         required: true
@@ -39,6 +43,8 @@ jobs:
           docker compose build bot
       - name: Register commands and run Discord test
         env:
+          GPT_SOVITS_PROMPT_TEXT: ${{ inputs.gpt_sovits_prompt_text }}
+          GPT_SOVITS_URL: https://folding-naples-carry-reforms.trycloudflare.com
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_CLIENT_ID: ${{ inputs.application_id }}
           DISCORD_GUILD_ID: ${{ inputs.server_id }}
@@ -51,9 +57,21 @@ jobs:
           printf 'DISCORD_TOKEN=%s\nDISCORD_CLIENT_ID=%s\nDISCORD_GUILD_ID=%s\nENGINE_TERMS_ACCEPTED=voicevox\n' \
             "$DISCORD_TOKEN" "$DISCORD_CLIENT_ID" "$DISCORD_GUILD_ID" > .env
           unset DISCORD_TOKEN
-          docker compose up -d --wait --wait-timeout 300
+          override="$RUNNER_TEMP/discord-wav.compose.yml"
+          cat > "$override" <<'COMPOSE'
+          services:
+            bot:
+              environment:
+                - GPT_SOVITS_PROMPT_TEXT
+                - GPT_SOVITS_URL
+          COMPOSE
+          docker compose -f docker-compose.yml -f "$override" up -d --wait --wait-timeout 300
+          # Compare the container's actual values without printing the transcript.
+          for key in GPT_SOVITS_PROMPT_TEXT GPT_SOVITS_URL; do
+            docker compose exec -T bot printenv "$key" | cmp - <(printf '%s\n' "${!key}")
+          done
           docker compose run --rm --no-deps bot node dist/scripts/register.js
-          echo 'Bot is online for 10 minutes. Test /join and /say from Discord now.'
+          echo 'Bot is online for 10 minutes. Test /join and /say, or /wav if a reference transcript was supplied.'
           for ((minute = 0; minute < 10; minute++)); do
             curl -fsS --max-time 5 http://127.0.0.1:8080/readyz > /dev/null
             sleep 60
