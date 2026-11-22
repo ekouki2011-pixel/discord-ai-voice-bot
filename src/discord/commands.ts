@@ -6,6 +6,7 @@ const cmd=(name:string,description:string)=>new SlashCommandBuilder().setName(na
   .setContexts(InteractionContextType.Guild).setIntegrationTypes(ApplicationIntegrationType.GuildInstall);
 export const commands=[
   cmd('join','今いるVCにBotを参加させます'),cmd('leave','BotをVCから退出させます'),
+  cmd('wav','文章を外部GPT-SoVITSへ送り、このチャットに合成音声を添付します').addStringOption(o=>o.setName('text').setDescription('日本語の文章').setRequired(true).setMaxLength(2000)),
   cmd('say','AI合成音声で文章を読み上げます').addStringOption(o=>o.setName('text').setDescription('読み上げる文章').setRequired(true).setMaxLength(2000)),
   cmd('voice','読み上げ音声の一覧・選択・同期')
     .addSubcommand(s=>s.setName('list').setDescription('使用できる音声を表示').addStringOption(engineOption).addIntegerOption(o=>o.setName('page').setDescription('ページ番号').setMinValue(1)))

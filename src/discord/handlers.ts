@@ -4,7 +4,8 @@ import { Store } from '../db.js';
 import { Engines } from '../engines/index.js';
 import { SaydiEngine } from '../engines/saydi.js';
 import { SpeechService } from '../service.js';
-import { SlidingLimit } from '../text.js';
+import { Http, audioResult } from '../engines/http.js';
+import { normalizeText, SlidingLimit } from '../text.js';
 import { AppError, engineId, publicError, type VoiceSettings } from '../types.js';
 import { logError } from '../log.js';
 import { DiscordVoice } from './voice.js';
@@ -15,6 +16,7 @@ export function autoEligible(input:{enabled:boolean;configuredChannel:string|nul
   return input.enabled&&input.configuredChannel===input.channelId&&!input.bot&&!input.webhook&&!input.system&&input.sameVC&&input.visible&&!!input.content.trim();
 }
 const HELP=`このBotはAI合成音声を使用します。VCの音声受信・録音は行いません。
+/wav text:こんにちは でチャットにGPT-SoVITSのWAVを添付します。
 1. VCに入り /join
 2. 初回は管理者が /voice sync engine:voicevox → /voice approve engine:voicevox id:音声ID rights:true
 3. /voice set で音声を選び /say text:こんにちは！
@@ -49,13 +51,31 @@ export class Handlers {
   async command(i:ChatInputCommandInteraction):Promise<void>{
     if(!i.inGuild()||!i.guildId)return;
     try{
-      await i.deferReply({flags:MessageFlags.Ephemeral});
+      await i.deferReply(i.commandName==='wav'?{}:{flags:MessageFlags.Ephemeral});
       const guildId=i.guildId;const manager=isManager(i.memberPermissions);const guild=this.store.guild(guildId);
       const name=i.commandName;const sub=i.options.getSubcommand(false);
       if(['auto','channel','admin'].includes(name)||name==='voice'&&['sync','approve','revoke'].includes(sub??''))requireManager(manager);
       // Protect synchronization and REST-backed commands without throttling emergency stop/leave.
       if(!['stop','skip','leave'].includes(name))this.controlRate.take([{key:`cmd:${guildId}:${i.user.id}`,limit:30}]);
       let message='設定を保存しました。';
+      if(name==='wav'){
+        if(guild.paused)throw new AppError('PAUSED','読み上げは一時停止中です。');
+        if(!i.appPermissions?.has(PermissionFlagsBits.AttachFiles))throw new AppError('ATTACH_FILES','Botにファイル添付権限が必要です。');
+        const prompt=this.config.GPT_SOVITS_PROMPT_TEXT;
+        if(!prompt)throw new AppError('PROMPT_MISSING','管理者が参照音声の正確なセリフを GPT_SOVITS_PROMPT_TEXT に設定してください。');
+        const text=normalizeText(i.options.getString('text',true),guild.maxChars);
+        const url=new URL('/tts',this.config.GPT_SOVITS_URL);
+        url.search=new URLSearchParams({text,text_lang:'ja',ref_audio_path:'/content/GPT-SoVITS/ref.wav',prompt_text:prompt,prompt_lang:'ja',media_type:'wav'}).toString();
+        this.speech.rate.take([{key:`u:${guildId}:${i.user.id}`,limit:guild.perUserPerMinute},{key:`g:${guildId}`,limit:guild.perGuildPerMinute}]);
+        const chars=[...text].length;
+        this.store.consume([{scope:`guild:${guildId}`,chars,limit:guild.dailyChars},{scope:`user:${guildId}:${i.user.id}`,chars,limit:guild.userDailyChars},{scope:'cloud:all',chars,limit:this.config.GLOBAL_DAILY_CLOUD_CHARS}]);
+        const http=new Http(this.config.API_TIMEOUT_MS,Math.min(this.config.MAX_AUDIO_BYTES,i.attachmentSizeLimit));
+        const audio=audioResult(await http.request(url,{method:'GET'}),'wav').bytes;
+        if(audio.length<44||audio.toString('ascii',0,4)!=='RIFF'||audio.toString('ascii',8,12)!=='WAVE')
+          throw new AppError('INVALID_WAV','GPT-SoVITSからWAVファイルを取得できませんでした。');
+        await i.editReply({content:'GPT-SoVITSによるAI合成音声',files:[{attachment:audio,name:'speech.wav'}]});
+        return;
+      }
       if(name==='join'){
         const member=await this.member(i);const channel=member.voice.channel;
         if(!channel||channel.type!==ChannelType.GuildVoice)throw new AppError('JOIN_VC','通常のボイスチャンネルに参加してから /join してください。');
