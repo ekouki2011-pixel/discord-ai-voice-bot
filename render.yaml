@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: discord-ai-voice-bot
+    runtime: docker
+    branch: main
+    plan: starter
+    numInstances: 1
+    dockerContext: .
+    dockerfilePath: ./deploy/Koyeb.Dockerfile
+    healthCheckPath: /readyz
+    disk:
+      name: bot-data
+      mountPath: /mnt/bot
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: GPT_SOVITS_URL
+        value: "https://pope-polymer-restructuring-sizes.trycloudflare.com"
+      - key: GPT_SOVITS_PROMPT_TEXT
+        value: "私は姫乃きさら。担当は原画。このくらいでいいでしょ？"
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false

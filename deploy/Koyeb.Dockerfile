@@ -18,7 +18,7 @@ RUN mkdir -p /app/data /app/tmp /app/backups && chown -R node:node /app/data /ap
 ENV GPT_SOVITS_URL=https://pope-polymer-restructuring-sizes.trycloudflare.com \
     GPT_SOVITS_PROMPT_TEXT="私は姫乃きさら。担当は原画。このくらいでいいでしょ？"
 COPY deploy/koyeb-start.sh /app/koyeb-start.sh
-EXPOSE 8000
+EXPOSE 8000 10000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:8000/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT || process.env.HEALTH_PORT)+'/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["/bin/sh", "/app/koyeb-start.sh"]

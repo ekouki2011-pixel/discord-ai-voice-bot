@@ -24,7 +24,7 @@ const schema = z.object({
 });
 export type Config = z.infer<typeof schema>;
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const result = schema.safeParse(env);
+  const result = schema.safeParse({ ...env, HEALTH_PORT: env.PORT ?? env.HEALTH_PORT });
   if (!result.success) throw new Error('環境変数の形式が不正です: ' + result.error.issues.map(x => x.path.join('.')).join(', '));
   for (const value of result.data.ENGINE_TERMS_ACCEPTED.split(',').filter(Boolean)) engineId.parse(value.trim());
   return result.data;

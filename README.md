@@ -124,3 +124,11 @@ docker compose logs --tail=100 bot
 ```
 
 非公開GitHubリポジトリへの保存方法は [GitHub手順](docs/GITHUB.md) を参照してください。既存ゲーム・サイトのリポジトリは使用しません。
+
+## Render で常時起動する
+
+Render の「New → Blueprint」からこのリポジトリの main を選ぶと、render.yaml が Docker Web Service 1台と SQLite 用ディスクを設定します。Koyeb と共通の Dockerfile を使います。Starter とディスクは有料です。画面の見積もりを確認してからデプロイしてください。旧ホストや10分テストで同じBotが動いていれば先に停止してください。
+
+初回は DISCORD_TOKEN（Bot トークン）、DISCORD_CLIENT_ID（Application ID）、DISCORD_GUILD_ID（サーバーID）を入力します。PORT、GPT_SOVITS_URL、GPT_SOVITS_PROMPT_TEXT は Blueprint に設定済みです。自動読み上げを使う場合は Discord Developer Portal の Message Content Intent を有効にし、Render の Environment に MESSAGE_CONTENT_ENABLED=true を追加して再デプロイしてください。
+
+サービスの公開URLで / が OK、/readyz が HTTP 200 になったら、Discord で /wav を試してください。GPT-SoVITS のサーバーとトンネルは別途稼働が必要です。URLを変更したときは render.yaml の GPT_SOVITS_URL も更新してください。VC の /say には別途対応する音声エンジンの設定が必要です。

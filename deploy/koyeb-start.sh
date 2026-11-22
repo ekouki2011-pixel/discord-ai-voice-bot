@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-: "${DISCORD_TOKEN:?Set DISCORD_TOKEN in Koyeb Secrets}"
+: "${DISCORD_TOKEN:?Set DISCORD_TOKEN in the host environment}"
 : "${DISCORD_CLIENT_ID:?Set the Discord application ID}"
 : "${DISCORD_GUILD_ID:?Set the Discord server ID}"
 install -d -m 700 -o node -g node /mnt/bot/state
