@@ -65,12 +65,21 @@ export class Handlers {
         if(!prompt)throw new AppError('PROMPT_MISSING','管理者が参照音声の正確なセリフを GPT_SOVITS_PROMPT_TEXT に設定してください。');
         const text=normalizeText(i.options.getString('text',true),guild.maxChars);
         const url=new URL('/tts',this.config.GPT_SOVITS_URL);
-        url.search=new URLSearchParams({text,text_lang:'ja',ref_audio_path:'/content/GPT-SoVITS/ref.wav',prompt_text:prompt,prompt_lang:'ja',media_type:'wav'}).toString();
+        url.search=new URLSearchParams({text,text_lang:'ja',ref_audio_path:this.config.GPT_SOVITS_REF_AUDIO_PATH,prompt_text:prompt,prompt_lang:'ja',media_type:'wav'}).toString();
         this.speech.rate.take([{key:`u:${guildId}:${i.user.id}`,limit:guild.perUserPerMinute},{key:`g:${guildId}`,limit:guild.perGuildPerMinute}]);
         const chars=[...text].length;
         this.store.consume([{scope:`guild:${guildId}`,chars,limit:guild.dailyChars},{scope:`user:${guildId}:${i.user.id}`,chars,limit:guild.userDailyChars},{scope:'cloud:all',chars,limit:this.config.GLOBAL_DAILY_CLOUD_CHARS}]);
         const http=new Http(this.config.API_TIMEOUT_MS,Math.min(this.config.MAX_AUDIO_BYTES,i.attachmentSizeLimit));
-        const audio=audioResult(await http.request(url,{method:'GET'}),'wav').bytes;
+        let response;
+        try {
+          response = await http.request(url, {method:'GET'});
+        } catch (error) {
+          if (error instanceof AppError && error.status === 404) {
+            throw new AppError('GPT_SOVITS_404','GPT-SoVITSが404を返しました。管理者はGPT_SOVITS_URLの接続先にGET /ttsがあるか確認してください。',404);
+          }
+          throw error;
+        }
+        const audio=audioResult(response,'wav').bytes;
         if(audio.length<44||audio.toString('ascii',0,4)!=='RIFF'||audio.toString('ascii',8,12)!=='WAVE')
           throw new AppError('INVALID_WAV','GPT-SoVITSからWAVファイルを取得できませんでした。');
         await i.editReply({content:'GPT-SoVITSによるAI合成音声',files:[{attachment:audio,name:'speech.wav'}]});

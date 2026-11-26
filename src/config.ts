@@ -10,6 +10,7 @@ const schema = z.object({
   TEMP_DIR: z.string().default('tmp'), FFMPEG_PATH: z.string().default('ffmpeg'),
   HEALTH_HOST: z.string().default('127.0.0.1'), HEALTH_PORT: z.coerce.number().int().min(0).max(65535).default(8080),
   GPT_SOVITS_URL: z.string().default('https://pope-polymer-restructuring-sizes.trycloudflare.com'),
+  GPT_SOVITS_REF_AUDIO_PATH: z.string().trim().min(1).default('/content/GPT-SoVITS/ref.wav'),
   GPT_SOVITS_PROMPT_TEXT: z.string().trim().default(''),
   VOICEVOX_URL: z.url().default('http://127.0.0.1:50021'),
   SAYDI_API_KEY: z.string().default(''),
